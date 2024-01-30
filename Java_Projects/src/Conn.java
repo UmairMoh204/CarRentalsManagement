@@ -35,7 +35,7 @@ public class Conn {
 
     private Properties loadConfig() {
         Properties config = new Properties();
-        try (InputStream input = new FileInputStream("/Users/hamzamohammed/Documents/Java_Projects/src/.gitignore/config.properties")) {
+        try (InputStream input = getClass().getResourceAsStream("config.properties")) {
             config.load(input);
         } catch (IOException e) {
             throw new RuntimeException("Error reading config.properties", e);
