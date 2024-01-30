@@ -1,6 +1,10 @@
 package src;
 import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 
 import com.toedter.calendar.JCalendar;
 import com.toedter.calendar.JDateChooser;
@@ -15,6 +19,7 @@ import java.io.IOException;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 
 public class home extends JFrame implements ActionListener{
     private final int homeWidth = 900;
@@ -22,6 +27,7 @@ public class home extends JFrame implements ActionListener{
     public static JFrame frame;
     public JLabel label;
     private JPanel mainPanel;
+    private JMenu menu;
     private JMenuBar menuBar;
     private JCalendar calendar;
     private String[] carOptionsList;
@@ -35,10 +41,11 @@ public class home extends JFrame implements ActionListener{
     private JTextField phoneInput;
     private JDateChooser expirationDate;
     private JButton continueButton;
-    private AbstractTableModel tableModel;
+    private DefaultTableModel tableModel;
     private JTable table; 
+    private Connection connection;
 
-    home() {
+    home() throws SQLException {
         setSize(homeWidth, homeHeight);
         setTitle("ExoticRentals");
         setLocationRelativeTo(null);
@@ -50,19 +57,12 @@ public class home extends JFrame implements ActionListener{
         menuBar = new JMenuBar();
         setJMenuBar(menuBar);
 
-        JMenu menu = new JMenu("Setting");
+        menu = new JMenu("Setting");
         menuBar.add(menu);
 
-        JMenuItem vehicles = new JMenu("Vehicles");
-        menuBar.add(vehicles);
-
-        JMenuItem vehicles_ins = new JMenuItem("Vehicles Insurance");
-        vehicles.add(vehicles_ins);
-
-        JMenuItem vehicles_his = new JMenuItem("Vehicles History");
-        vehicles.add(vehicles_his);
-
         JMenuItem logout = new JMenuItem("Log Out");
+        logout.setActionCommand("Logout");
+        logout.addActionListener(this);
         menu.add(logout);
 
         JPanel squareBoxPanel = new JPanel(null);
@@ -159,68 +159,117 @@ public class home extends JFrame implements ActionListener{
         continueButton.addActionListener(this);
         squareBoxPanel.add(continueButton);
 
-        DefaultTableModel tableModel = new DefaultTableModel();
-        JTable table = new JTable();
-        table.setBounds(450, 20, 425, 365);
-        mainPanel.add(table);
+        tableModel = new DefaultTableModel();
+        table = new JTable(tableModel);
+        table.setModel(tableModel);
 
+        String[] colNames = {"First Name", "Last Name", "Phone Number", "Credit Card", "CVV", "Expiration Date", "Vehicle Type", "From Date", "To Date"};
+        tableModel.setColumnIdentifiers(colNames);
+
+        JScrollPane scrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+        scrollPane.setBounds(460, 20, 435, 365);
+        mainPanel.add(scrollPane);
+
+        int[] columnWidths = {100, 100, 100, 100, 50, 100, 100, 100, 100};
+        setColumnWidths(table, columnWidths);
+
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        refreshTable();
 
         setContentPane(mainPanel);
         setVisible(true);
     }
 
-    // private void refreshTable() {
-    //     DefaultTableModel tableModel = new DefaultTableModel();
-    //     tableModel.setRowCount(0);
-    //     Conn c = new Conn();
-    //     ResultSet resultSet = c.getDataFromDatabase();
+    private void setColumnWidths(JTable table, int[] widths) {
+        TableColumnModel columnModel = table.getColumnModel();
+        for (int i = 0; i < widths.length; i++) {
+            TableColumn column = columnModel.getColumn(i);
+            column.setPreferredWidth(widths[i]);
+        }
+    }
 
-    //     try {
-    //         while (resultSet.next()) {
-    //             // Add a row to the table model
-    //             Object[] rowData = {
-    //                     resultSet.getString("first_name"),
-    //                     resultSet.getString("last_name"),
-    //                     resultSet.getString("phone"),
-    //                     resultSet.getString("card_info"),
-    //                     resultSet.getString("cvv"),
-    //                     resultSet.getString("exp_date"),
-    //                     resultSet.getString("vehicle"),
-    //                     resultSet.getString("from_date"),
-    //                     resultSet.getString("to_date")
-    //             };
-    //             tableModel.addRow(rowData);
-    //         }
-    //     } catch (SQLException ex) {
-    //         ex.printStackTrace();
-    //     }
-    // }
+    public void refreshTable() throws SQLException {
+        tableModel.setRowCount(0);
+        String[] colNames = {"First Name", "Last Name", "Phone Number", "Credit Card", "CVV", "Expiration Date", "Vehicle Type", "From Date", "To Date"};
+    
+        if (tableModel.getColumnCount() == 0) {
+            tableModel.setColumnIdentifiers(colNames);
+        }
+
+        Conn c = new Conn();
+        ResultSet resultSet = c.getDataFromDatabase();
+
+        try {
+            if (resultSet != null) {
+                while (resultSet.next()) {
+                    String[] rowData = {
+                            resultSet.getString("f_name"),
+                            resultSet.getString("l_name"),
+                            resultSet.getString("phone_number"),
+                            resultSet.getString("credit_card"),
+                            resultSet.getString("cvv"),
+                            resultSet.getString("expirationDate"),
+                            resultSet.getString("vehicle_type"),
+                            resultSet.getString("From_date"),
+                            resultSet.getString("To_date")
+                    };
+                    tableModel.addRow(rowData);
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
 
     public void actionPerformed(ActionEvent e) {
-        String firstNameInput1 = first_nameInput.getText();
-        String lastNameInput1 = last_nameInput.getText();
-        String selectedVehicle = (String) carOptions.getSelectedItem();
-        String cardInfoInput1 = cardInfoInput.getText();
-        String cvvInput1 = cvvInput.getText();
-        String fromDate1 = fromDate.getDate().toString();
-        String toDate1 = toDate.getDate().toString();
-        String expDate = expirationDate.getDate().toString();
-        String phoneInput1 = phoneInput.getText();  
-    
-        boolean hasEmptyField = false;
-    
-        if (firstNameInput1.equals("") || selectedVehicle.equals("") || cardInfoInput1.equals("") || cvvInput1.equals("")
-                || fromDate1.equals("") || toDate1.equals("") || expDate.equals("") || phoneInput1.equals("")) {
-            hasEmptyField = true;
-            JOptionPane.showMessageDialog(this, "One or More Fields Are Empty", "Error", JOptionPane.ERROR_MESSAGE);
+        if (e.getSource() == continueButton) {
+            String firstNameInput1 = first_nameInput.getText();
+            String lastNameInput1 = last_nameInput.getText();
+            String selectedVehicle = (String) carOptions.getSelectedItem();
+            String cardInfoInput1 = cardInfoInput.getText();
+            String cvvInput1 = cvvInput.getText();
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String fromDate1 = (fromDate.getDate() != null) ? dateFormat.format(fromDate.getDate()) : null;
+            String toDate1 = (toDate.getDate() != null) ? dateFormat.format(toDate.getDate()) : null;
+            String expDate = (expirationDate.getDate() != null) ? dateFormat.format(expirationDate.getDate()) : null;
+
+            String phoneInput1 = phoneInput.getText();
+
+            boolean hasEmptyField = false;
+
+            if (firstNameInput1.equals("") || selectedVehicle.equals("") || cardInfoInput1.equals("") || cvvInput1.equals("")
+                    || fromDate1 == null || toDate1 == null || expDate == null || phoneInput1.equals("")) {
+                hasEmptyField = true;
+                JOptionPane.showMessageDialog(this, "One or More Fields Are Empty", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+            if (!hasEmptyField) {
+                Conn c = new Conn();
+                c.insertCustomerData(firstNameInput1, lastNameInput1, phoneInput1, cardInfoInput1, cvvInput1, expDate,
+                        selectedVehicle, fromDate1, toDate1);
+                first_nameInput.setText("");
+                last_nameInput.setText("");
+                cardInfoInput.setText("");
+                cvvInput.setText("");
+                fromDate.setDate(null);
+                toDate.setDate(null);
+                expirationDate.setDate(null);
+                phoneInput.setText("");
+                try {
+                    refreshTable();
+                } catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+            }
         }
-    
-        if (!hasEmptyField) {
-            Conn c = new Conn();
-            c.insertCustomerData(firstNameInput1, lastNameInput1, phoneInput1, cardInfoInput1, cvvInput1, expDate,
-                    selectedVehicle, fromDate1, toDate1); 
-            dispose();
-            home h = new home();
-    }
-}
+        else if (e.getActionCommand().equals("Logout")) { 
+            int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to log out?", "Confirm Logout", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                dispose();
+                login l = new login();
+            }
+        }
 } 
+}

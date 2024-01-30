@@ -110,7 +110,12 @@ public class signup extends JFrame implements ActionListener{
                 Conn c = new Conn();
                 c.insertData(firstName, lastName, employeeID, password);
                 dispose();
-                home h = new home();
+                try {
+                    home h = new home();
+                }
+                catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
             }
         }
     }
