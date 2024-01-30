@@ -19,7 +19,7 @@
 *.tar.gz
 *.rar
 
-# Configuration Files
+# Configuration Files in .gitignore folder
 config.properties
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
